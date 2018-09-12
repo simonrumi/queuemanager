@@ -1,0 +1,15 @@
+extends layout
+
+block content
+	h1= title
+	p Allows attendees at a venue (such as an amusement park) to join queues for attractions without having to physically stand in line the whole time
+
+	h1 Dynamic Content
+
+	if error
+		p error getting content from the database
+	else
+		p The database has the following counts
+		ul
+			li #[strong Queues:] !{data.queueCount}
+			li #[strong Attendees:] !{data.attendeeCount}

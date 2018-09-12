@@ -1,0 +1,25 @@
+extends layout
+
+block content
+	h1= title
+
+	h2
+		| All Queues
+
+	ul
+		each queue in data.queuesAttendeeIsNotIn
+			li
+				a(href=queue.url + '/addAttendee/:' + data.attendee._id)
+					| #{queue.attractionName}
+		else
+			| no queues
+
+	h2
+		| Queues Attendee Is In
+	ul
+		each queue in data.attendeeInQueues
+			li
+				a(href=data.attendee.url)
+					| #{queue.attractionName}
+		else
+			| not in any queues

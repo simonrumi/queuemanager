@@ -1,0 +1,11 @@
+extends layout
+
+block content
+	h1= queue.attractionName
+
+	ul
+		each attendee in queue.attendees
+			li
+				| #{attendee.timeJoined}
+		else
+			| no attendees in queue
