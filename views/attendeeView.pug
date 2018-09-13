@@ -4,7 +4,7 @@ block content
 	h1= title
 
 	h2
-		| All Queues
+		| Queues to Join
 
 	ul
 		each queue in data.queuesAttendeeIsNotIn
@@ -17,9 +17,9 @@ block content
 	h2
 		| Queues Attendee Is In
 	ul
-		each queue in data.attendeeInQueues
+		each item in data.attendeeInQueues
 			li
 				a(href=data.attendee.url)
-					| #{queue.attractionName}
+					| #{item.queue.attractionName}
 		else
 			| not in any queues

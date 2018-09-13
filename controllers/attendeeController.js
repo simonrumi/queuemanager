@@ -33,39 +33,27 @@ exports.attendeeDetail = function(req, res) {
 			AttendeeModel.findById(attendeeId, callback);
 		},
 		attendeeInQueues: function(callback) {
-			AttendeeInQueueModel.find({'attendee': attendeeId}, callback);
+			AttendeeInQueueModel.find({'attendee': attendeeId}).populate('queue').exec(callback);
 		},
 	}, function(err, results) {
 		if (err) {
 			res.render('attendeeView', {title: 'Attendee Error Page', error: err});
 		} else {
-			let attendeeInQueueArr = results.attendeeInQueues;
-			let queueArr = results.queues;
-			let queuesAttendeeIsNotIn = [];
-			for (let i in attendeeInQueueArr) {
-				let queueId = attendeeInQueueArr[i].queue;
-				for (let j in queueArr) {
-					if (JSON.stringify(queueArr[j]._id) == JSON.stringify(queueId)) { // using JSON.stringify to make sure we're comparing the same type
-						log('attendee is in queue ' + JSON.stringify(queueArr[j]) + ' so adding name of queue to  the attendeeInQueue array');
-						// put the attraction name into the attendeeInQueue sub-object 
-						attendeeInQueueArr[i].attractionName = queueArr[j].attractionName;
-					} else {
-						let isInArray = queuesAttendeeIsNotIn && queuesAttendeeIsNotIn.find(function(element) {
-							return element == queueArr[j];
-						});
-						if (!isInArray) {
-							log('adding ' + JSON.stringify(queueArr[j]) + ' to queuesAttendeeIsNotIn');
-							queuesAttendeeIsNotIn.push(queueArr[j]);
-						}
-					}
-				}
-			}
-			results.queuesAttendeeIsNotIn = queuesAttendeeIsNotIn;
+			results.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(results.attendeeInQueues, results.queues);
+			log('results.queuesAttendeeIsNotIn = ' + JSON.stringify(results.queuesAttendeeIsNotIn));
 			res.render('attendeeView', {title: 'Attendee Page', error: err, data: results});
 		}
 	});
 
-	//res.send('not implemented: attendeeDetail');
+	const getQueuesAttendeeIsNotIn = function(attendeeInQueueArr, queueArr) {
+		let queuesAttendeeIsNotIn = queueArr.slice();
+		for (let j in attendeeInQueueArr) { // TODO make this a recursive loop instead of a for loop
+			queuesAttendeeIsNotIn = queuesAttendeeIsNotIn.filter(function(queue) {
+				return attendeeInQueueArr[j].queue._id != queue.id;
+			});
+		}
+		return queuesAttendeeIsNotIn;
+	}
 }
 
 exports.attendeeCreateGet = function(req, res) {
