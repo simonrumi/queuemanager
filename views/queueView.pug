@@ -1,11 +1,19 @@
 extends layout
 
 block content
-	h1= queue.attractionName
+	if error
+		h1= title
+		
+		p
+			| error
 
-	ul
-		each attendee in queue.attendees
-			li
-				| #{attendee.timeJoined}
-		else
-			| no attendees in queue
+	else
+
+		h1= data.queue.attractionName
+
+		ul
+			each item in data.attendeesInQueue
+				li
+					| #{item.timeJoined} --- #{item.attendee._id}
+			else
+				| no attendees in queue
