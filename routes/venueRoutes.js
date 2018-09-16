@@ -39,4 +39,7 @@ router.get('/attendee/:id', attendeeController.attendeeDetail);
 // add an attendee to a queue
 router.get('/queue/:queueid/addAttendee/:attendeeid', attendeeInQueueController.addAttendeeToQueue);
 
+// remove an attendee from a queue
+router.get('/queue/:queueid/removeAttendee/:attendeeid', attendeeInQueueController.removeAttendeeFromQueue);
+
 module.exports = router;
