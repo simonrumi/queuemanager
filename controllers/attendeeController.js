@@ -19,7 +19,6 @@ exports.attendeeList = function(req, res) {
 			res.render('attendeesView', {title: 'Attendee List', attendeeList: documents});
 		}
 	});
-	//res.send('not implemented: attendeeList');
 };
 
 exports.attendeeDetail = function(req, res) {

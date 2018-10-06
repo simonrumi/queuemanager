@@ -1,6 +1,11 @@
 extends layout
 
+block localscripts
+		script(src='/socket.io/socket.io.js')
+		script(src='/javascripts/attendeeClient.js')
+		
 block content
+
 	h1= title
 
 	if error
@@ -8,6 +13,8 @@ block content
 			| error
 
 	else 
+		div(id='attendee-info', class='invisible', data-attendeeId=data.attendee._id)
+
 		h2
 			| Queues to Join
 
@@ -38,3 +45,5 @@ block content
 				else
 					div(class='col-sm-4')
 						| not in any queues
+
+		script(src='/socket.io/socket.io.js')
