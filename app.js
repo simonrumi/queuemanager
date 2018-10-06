@@ -47,6 +47,8 @@ app.use('/javascripts', express.static(path.join(__dirname, 'public/javascritps'
 ///trying this to get to the socket.io client
 app.use('/socketlib', express.static(path.join(__dirname, 'node_modules/socket.io-client/dist')));
 
+app.use('/', venueRouter);
+app.use('/users', usersRouter);
 app.use('/venue', venueRouter);
 
 // catch 404 and forward to error handler
