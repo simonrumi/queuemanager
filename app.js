@@ -12,9 +12,6 @@ const server = http.createServer(app);
 log('server = ' + JSON.stringify(server));
 const io = require('socket.io')(server);
 
-// QQQQQQQQQQQQQQ try polying with this to see if it helps
-//server.listen(3000);
-
 io.on('connection', function(socket) {
 	log('a user connected');
 });
@@ -48,7 +45,6 @@ app.use('/javascripts', express.static(path.join(__dirname, 'public/javascritps'
 app.use('/socketlib', express.static(path.join(__dirname, 'node_modules/socket.io-client/dist')));
 
 app.use('/', venueRouter);
-app.use('/users', usersRouter);
 app.use('/venue', venueRouter);
 
 // catch 404 and forward to error handler
