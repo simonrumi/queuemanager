@@ -1,14 +1,24 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const log = require('./logger');
+const http = require('http');
+const app = express();
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-var venueRouter = require('./routes/venueRoutes');
+log('about to create a server then io');
+const server = http.Server(app); //createServer
+log('server = ' + JSON.stringify(server));
+const io = require('socket.io')(server);
 
-var app = express();
+server.listen(80);
+
+io.on('connect', function(socket) {
+	log('a user connected');
+});
+
+const venueRouter = require('./routes/venueRoutes');
 
 // database connection
 const mongoose = require('mongoose');
@@ -18,8 +28,10 @@ mongoose.Promise = global.Promise;
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error: '));
 
+
 // view engine setup
-app.set('views', path.join(__dirname, 'views'));
+//app.set('views', path.join(__dirname, 'views')); // original
+app.set('views', [path.join(__dirname, 'views'), path.join(__dirname, 'public')]);
 app.set('view engine', 'pug');
 
 app.use(logger('dev'));
@@ -28,8 +40,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', venueRouter); //indexRouter);
-app.use('/users', usersRouter);
+// this added so that we can serve /javascripts/attendeeClient.js from public/javascritps in socketio.html
+app.use('/javascripts', express.static(path.join(__dirname, 'public/javascritps')));
+
+///trying this to get to the socket.io client
+app.use('/socketlib', express.static(path.join(__dirname, 'node_modules/socket.io-client/dist')));
+
+app.use('/', venueRouter);
 app.use('/venue', venueRouter);
 
 // catch 404 and forward to error handler

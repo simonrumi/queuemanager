@@ -1,6 +1,11 @@
 extends layout
 
+block localscripts
+		script(src='/socket.io/socket.io.js')
+		script(src='/javascripts/attendeeClient.js')
+		
 block content
+
 	h1= title
 
 	if error
@@ -8,23 +13,37 @@ block content
 			| error
 
 	else 
+		div(id='attendee-info', class='invisible', data-attendeeId=data.attendee._id)
+
 		h2
 			| Queues to Join
 
-		ul
-			each queue in data.queuesAttendeeIsNotIn
-				li
-					a(href=queue.url + '/addAttendee/:' + data.attendee._id)
+		div(class='container-fluid')
+			div(class='row')
+				each queue in data.queuesAttendeeIsNotIn
+					div(class='col-sm-4')
 						| #{queue.attractionName}
-			else
-				| no queues
+					div(class='col-sm-8')
+						a(href=queue.url + '/addAttendee/:' + data.attendee._id)
+							| join queue
+				else
+					div(class='col-sm-4')
+						| no queues to join
 
 		h2
 			| Queues Attendee Is In
-		ul
-			each item in data.attendeeInQueues
-				li
-					a(href=data.attendee.url)
+		
+		div(class='container-fluid')
+			div(class='row')
+				each item in data.attendeeInQueues
+					div(class='col-sm-4')
 						| #{item.queue.attractionName}
-			else
-				| not in any queues
+					div(class='col-sm-8')
+						a(href= item.queue.url + '/removeAttendee/:' + item.attendee)
+							| leave queue
+						
+				else
+					div(class='col-sm-4')
+						| not in any queues
+
+		script(src='/socket.io/socket.io.js')

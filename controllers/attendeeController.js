@@ -1,6 +1,8 @@
 const AttendeeModel = require('../models/attendeeModel');
 const QueueModel = require('../models/queueModel');
 const AttendeeInQueueModel = require('../models/attendeeInQueue');
+const HelperFunctions = require('./helperFunctions');
+const getQueuesAttendeeIsNotIn = HelperFunctions.getQueuesAttendeeIsNotIn;
 const async = require('async');
 const log = require('../logger');
 
@@ -17,7 +19,6 @@ exports.attendeeList = function(req, res) {
 			res.render('attendeesView', {title: 'Attendee List', attendeeList: documents});
 		}
 	});
-	//res.send('not implemented: attendeeList');
 };
 
 exports.attendeeDetail = function(req, res) {
@@ -37,23 +38,15 @@ exports.attendeeDetail = function(req, res) {
 		},
 	}, function(err, results) {
 		if (err) {
+			log('Error getting attendee details: ' + err);
 			res.render('attendeeView', {title: 'Attendee Error Page', error: err});
+			return;
 		} else {
 			results.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(results.attendeeInQueues, results.queues);
 			log('results.queuesAttendeeIsNotIn = ' + JSON.stringify(results.queuesAttendeeIsNotIn));
 			res.render('attendeeView', {title: 'Attendee Page', error: err, data: results});
 		}
 	});
-
-	const getQueuesAttendeeIsNotIn = function(attendeeInQueueArr, queueArr) {
-		let queuesAttendeeIsNotIn = queueArr.slice();
-		for (let j in attendeeInQueueArr) { // TODO make this a recursive loop instead of a for loop
-			queuesAttendeeIsNotIn = queuesAttendeeIsNotIn.filter(function(queue) {
-				return attendeeInQueueArr[j].queue._id != queue.id;
-			});
-		}
-		return queuesAttendeeIsNotIn;
-	}
 }
 
 exports.attendeeCreateGet = function(req, res) {
