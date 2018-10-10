@@ -8,11 +8,13 @@ const http = require('http');
 const app = express();
 
 log('about to create a server then io');
-const server = http.createServer(app);
+const server = http.Server(app); //createServer
 log('server = ' + JSON.stringify(server));
 const io = require('socket.io')(server);
 
-io.on('connection', function(socket) {
+server.listen(80);
+
+io.on('connect', function(socket) {
 	log('a user connected');
 });
 

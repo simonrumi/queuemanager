@@ -1,11 +1,11 @@
 const main = function() {
 	//const socket = io();
-	const socket = io(); // 'http://localhost'
+	const socket = io('http://localhost'); 
 	socket.on('connect', function(){
 		console.log('socket io connected');
 	});
 	socket.on('event', function(data){
-		console.log('socket io got n event with data: ' + JSON.stringify(data));
+		console.log('socket io got an event with data: ' + JSON.stringify(data));
 	});
 	socket.on('disconnect', function(){
 		console.log('socket io disconnected');
