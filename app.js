@@ -8,7 +8,7 @@ const http = require('http');
 const app = express();
 
 log('about to create a server then io');
-const server = http.Server(app); //createServer
+const server = http.Server(app);
 log('server = ' + JSON.stringify(server));
 const io = require('socket.io')(server);
 

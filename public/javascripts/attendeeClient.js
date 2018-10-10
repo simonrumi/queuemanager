@@ -1,6 +1,8 @@
 const main = function() {
 	//const socket = io();
-	const socket = io('http://localhost'); 
+	const socketLocation = window.location.protocol + '//' + window.location.hostname;
+	console.log('socketLocation = ' + socketLocation);
+	const socket = io(socketLocation);
 	socket.on('connect', function(){
 		console.log('socket io connected');
 	});
@@ -10,7 +12,7 @@ const main = function() {
 	socket.on('disconnect', function(){
 		console.log('socket io disconnected');
 	});
-	
+
 	//set a cookie on the page using the attendee id from the mongo db (which is already given to us when the page )
 	setAttendeeCookie();
 }
