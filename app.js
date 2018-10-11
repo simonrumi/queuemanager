@@ -12,7 +12,7 @@ const server = http.Server(app);
 log('server = ' + JSON.stringify(server));
 const io = require('socket.io')(server);
 
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 443;
 server.listen(port, function() {
 	log('server listening on port ' + port);
 });
