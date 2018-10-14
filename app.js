@@ -6,10 +6,19 @@ const logger = require('morgan');
 const log = require('./logger');
 const http = require('http');
 const app = express();
+const venueRouter = require('./routes/venueRoutes');
+const attendeeInQueueControllerUsingSocket = require('./controllers/attendeeInQueueControllerUsingSocket');
 
+/***************************** pug stuff **************************************/
+const pug = require('pug');
+
+// Compile the source code
+const attendeeViewRenderer = pug.compileFile('views/attendeeSubView.pug');
+
+
+/************************** socket-io setup ***********************************/
 log('about to create a server then io');
 const server = http.Server(app);
-log('server = ' + JSON.stringify(server));
 const io = require('socket.io')(server);
 
 const port = process.env.PORT || 80;
@@ -19,11 +28,40 @@ server.listen(port, function() {
 
 io.on('connect', function(socket) {
 	log('a user connected');
+
+	socket.on('joinQueue', function(data, socket) {
+		log('an attendee wants to join a queue; data given is: ' + data);
+		attendeeInQueueControllerUsingSocket.addAttendeeToQueueUsingSocket(data, function(joinQueueResponse) {
+			//log('returned to app.js after calling addAttendeeToQueueUsingSocket, joinQueueResponse = ' + JSON.stringify(joinQueueResponse));
+			// Render the Pug template for attendeeView, using the data we just got, then send it to the client
+			let renderedAttendeeView = attendeeViewRenderer(joinQueueResponse);
+			io.emit('joinQueueResponse', renderedAttendeeView);
+		}, function(err) {
+			//log('returned to app.js with an error after calling addAttendeeToQueueUsingSocket, joinQueueResponse = ' + JSON.stringify(joinQueueResponse));
+			io.emit('joinQueueResponse', JSON.stringify(err));
+		});
+	});
+
+	socket.on('leaveQueue', function(data, socket) {
+		log('an attendee wants to leave a queue; data given is: ' + data);
+		attendeeInQueueControllerUsingSocket.removeAttendeeFromQueueUsingSocket(data, function(leaveQueueResponse) {
+			//log('\n returned to app.js after calling removeAttendeeFromQueueUsingSocket, leaveQueueResponse = ' + JSON.stringify(leaveQueueResponse));
+			// Render the Pug template for attendeeView, using the data we just got, then send it to the client
+			let renderedAttendeeView = attendeeViewRenderer(leaveQueueResponse);
+			io.emit('leaveQueueResponse', renderedAttendeeView);
+		}, function(err) {
+			//log('\n returned to app.js with an error after calling removeAttendeeFromQueueUsingSocket, leaveQueueResponse = ' + JSON.stringify(leaveQueueResponse));
+			io.emit('leaveQueueResponse', JSON.stringify(err));
+		});
+	});
+
+	socket.on('disconnect', function(){
+		log('the user disconnected');
+	})
 });
 
-const venueRouter = require('./routes/venueRoutes');
 
-// database connection
+/************************* database connection ********************************/
 const mongoose = require('mongoose');
 const mongodb = 'mongodb://simonrumi:8wxou2DQg2ko@ds239682.mlab.com:39682/queue_manager';
 mongoose.connect(mongodb, {useNewUrlParser: true});
@@ -32,7 +70,7 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error: '));
 
 
-// view engine setup
+/*********************** view engine setup, etc *******************************/
 //app.set('views', path.join(__dirname, 'views')); // original
 app.set('views', [path.join(__dirname, 'views'), path.join(__dirname, 'public')]);
 app.set('view engine', 'pug');

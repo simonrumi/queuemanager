@@ -25,7 +25,7 @@ exports.attendeeDetail = function(req, res) {
 	log('in attendeeDetail');
 	let attendeeId = req.params.id;
 	attendeeId = attendeeId.replace(':', ''); // strip out leading colon if it is there
-	
+
 	async.parallel({
 		queues: function(callback) {
 			QueueModel.find({}, callback);
@@ -43,7 +43,7 @@ exports.attendeeDetail = function(req, res) {
 			return;
 		} else {
 			results.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(results.attendeeInQueues, results.queues);
-			log('results.queuesAttendeeIsNotIn = ' + JSON.stringify(results.queuesAttendeeIsNotIn));
+			//log('results.queuesAttendeeIsNotIn = ' + JSON.stringify(results.queuesAttendeeIsNotIn));
 			res.render('attendeeView', {title: 'Attendee Page', error: err, data: results});
 		}
 	});
@@ -52,7 +52,7 @@ exports.attendeeDetail = function(req, res) {
 exports.attendeeCreateGet = function(req, res) {
 	log('in attendeeCreateGet');
 
-	/***** code for adding a single item 
+	/***** code for adding a single item
 	var oneTestAttendee = new AttendeeModel(); // {'over21': true}
 	oneTestAttendee.save(function(err) {
 		if (err) {
