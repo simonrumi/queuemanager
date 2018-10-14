@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const log = require('../logger');
-log('in venueRoutes, required express');
+const socketConnection = require('../controllers/socketConnection');
 
 //controllers
 const queueController = require('../controllers/queueController');
@@ -9,9 +9,10 @@ const attendeeController = require('../controllers/attendeeController');
 const attendeeInQueueController = require('../controllers/attendeeInQueueController');
 log('in venueRoutes, required queueController, attendeeController, attendeeInQueueController');
 
-/**** Queue routes *****/
+// QQQQ change to send them to  attendeeController.attendeeDetail ....BUT need to get the attendee id from the cookie first
 router.get('/', queueController.index);
 
+/**** Queue routes *****/
 // create a queue from a form - note that this must come before routes to display a queue
 router.get ('/queues/create', queueController.queueCreateGet);
 
