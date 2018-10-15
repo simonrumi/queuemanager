@@ -9,8 +9,7 @@ const attendeeController = require('../controllers/attendeeController');
 const attendeeInQueueController = require('../controllers/attendeeInQueueController');
 log('in venueRoutes, required queueController, attendeeController, attendeeInQueueController');
 
-// QQQQ change to send them to  attendeeController.attendeeDetail ....BUT need to get the attendee id from the cookie first
-router.get('/', queueController.index);
+router.get('/', attendeeController.index); // was queueController.index
 
 /**** Queue routes *****/
 // create a queue from a form - note that this must come before routes to display a queue

@@ -12,6 +12,10 @@ block content
 		p
 			| error
 
+	else if !data
+		p
+			| searching for cookie...
+
 	else
 		div(id='attendee-core-dynamic-info')
 			div(id='attendee-info', class='invisible', data-attendeeid=data.attendee._id)
