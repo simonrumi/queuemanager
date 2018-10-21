@@ -18,8 +18,17 @@ const mongoose = require('mongoose');
 const mongodb = 'mongodb://simonrumi:8wxou2DQg2ko@ds239682.mlab.com:39682/queue_manager';
 mongoose.connect(mongodb, {useNewUrlParser: true});
 mongoose.Promise = global.Promise;
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error: '));
+var db = mongoose.connection;
+db.on('error', function() {
+	console.error.bind(console, 'MongoDB connection error: ');
+	db.close();
+	//wait 500ms and try connecting again
+	setTimeout(function(db) {
+		mongoose.connect(mongodb, {useNewUrlParser: true});
+		mongoose.Promise = global.Promise;
+		db = mongoose.connection;
+	}, 500);
+});
 
 
 /*********************** view engine setup, etc *******************************/

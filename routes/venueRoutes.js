@@ -9,7 +9,7 @@ const attendeeController = require('../controllers/attendeeController');
 const attendeeInQueueController = require('../controllers/attendeeInQueueController');
 log('in venueRoutes, required queueController, attendeeController, attendeeInQueueController');
 
-router.get('/', attendeeController.index); // was queueController.index
+router.get('/', attendeeController.index);
 
 /**** Queue routes *****/
 // create a queue from a form - note that this must come before routes to display a queue
@@ -27,7 +27,7 @@ router.get('/queue/:id', queueController.queueDetail);
 
 /**** Attendee routes *****/
 // create an attendee from a form - note that this must come before routes to display an attendee
-router.get ('/attendees/create', attendeeController.attendeeCreateGet);
+//router.get ('/attendees/create', attendeeController.attendeeCreateGet); // calling from socketConnection.js instead
 
 //crete an attendee from a POST
 router.post('/attendees/create', attendeeController.attendeeCreatePost);

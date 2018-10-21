@@ -1,13 +1,14 @@
 const http = require('http');
 const log = require('../logger');
 const attendeeInQueueControllerUsingSocket = require('./attendeeInQueueControllerUsingSocket');
+const attendeeControllerUsingSocket = require('./attendeeControllerUsingSocket');
 let io = null;
 
 /***************************** pug stuff *************************************/
 const pug = require('pug');
 
 // Compile the source code
-const attendeeViewRenderer = pug.compileFile('./views/attendeeSubView.pug');
+const attendeeSubViewRenderer = pug.compileFile('./views/attendeeSubView.pug');
 
 
 /***************************** socketConn *************************************/
@@ -33,7 +34,7 @@ const socketConn = {
           attendeeInQueueControllerUsingSocket.addAttendeeToQueueUsingSocket(data, function(joinQueueResponse) {
             //log('returned to app.js after calling addAttendeeToQueueUsingSocket, joinQueueResponse = ' + JSON.stringify(joinQueueResponse));
             // Render the Pug template for attendeeView, using the data we just got, then send it to the client
-            let renderedAttendeeView = attendeeViewRenderer(joinQueueResponse);
+            let renderedAttendeeView = attendeeSubViewRenderer(joinQueueResponse);
             io.emit('joinQueueResponse', renderedAttendeeView);
           }, function(err) {
             //log('returned to app.js with an error after calling addAttendeeToQueueUsingSocket, joinQueueResponse = ' + JSON.stringify(joinQueueResponse));
@@ -46,11 +47,33 @@ const socketConn = {
           attendeeInQueueControllerUsingSocket.removeAttendeeFromQueueUsingSocket(data, function(leaveQueueResponse) {
             //log('\n returned to app.js after calling removeAttendeeFromQueueUsingSocket, leaveQueueResponse = ' + JSON.stringify(leaveQueueResponse));
             // Render the Pug template for attendeeView, using the data we just got, then send it to the client
-            let renderedAttendeeView = attendeeViewRenderer(leaveQueueResponse);
+            let renderedAttendeeView = attendeeSubViewRenderer(leaveQueueResponse);
             io.emit('leaveQueueResponse', renderedAttendeeView);
           }, function(err) {
             //log('\n returned to app.js with an error after calling removeAttendeeFromQueueUsingSocket, leaveQueueResponse = ' + JSON.stringify(leaveQueueResponse));
             io.emit('leaveQueueResponse', JSON.stringify(err));
+          });
+        });
+
+        socket.on('knownAttendee', function(data, socket) {
+          log('got a knownAttendee from the client: ' + JSON.stringify(data));
+          attendeeControllerUsingSocket.attendeeDetailUsingSocket(data, function(attendeeDetailData) {
+              //log('in knownwAttendee, got attendeeDetailData = ' + JSON.stringify(attendeeDetailData));
+              let renderedAttendeeView = attendeeSubViewRenderer(attendeeDetailData);
+              io.emit('knownAttendeeResponse', renderedAttendeeView);
+            }, function(err) {
+              io.emit('knownAttendeeResponse', JSON.stringify(err));
+          });
+        });
+
+        socket.on('unknownAttendee', function(data, socket) {
+          log('got an unknown Attendee from the client, creating a new client record');
+          attendeeControllerUsingSocket.attendeeCreateGet(data, function(attendeeDetailData) {
+            log('\n in unknownwAttendee, got attendeeDetailData = ' + JSON.stringify(attendeeDetailData));
+            let renderedAttendeeView = attendeeSubViewRenderer(attendeeDetailData);
+            io.emit('unknownAttendeeResponse', renderedAttendeeView);
+            }, function(err) {
+              io.emit('unknownAttendeeResponse', JSON.stringify(err));
           });
         });
 

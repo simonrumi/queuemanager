@@ -9,7 +9,7 @@ const log = require('../logger');
 log('in attendeeController, required models/attendeemodel, models/queueModel, models/attendeeInQueue');
 
 exports.index = function(req, res) {
-	res.render('attendeeView', {title: 'Unknown Attendee'});
+	res.render('attendeeView', {title: ''});
 }
 
 
@@ -49,14 +49,14 @@ exports.attendeeDetail = function(req, res) {
 			return;
 		} else {
 			results.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(results.attendeeInQueues, results.queues);
-			//log('results.queuesAttendeeIsNotIn = ' + JSON.stringify(results.queuesAttendeeIsNotIn));
-			res.cookie('attendeeId', results.attendeeid);
+			res.cookie('attendeeId', attendeeId, {maxAge : (90*24*60*60*1000)});
 			res.render('attendeeView', {title: 'Attendee Page', error: err, data: results});
 		}
 	});
 }
 
 
+/*
 exports.attendeeCreateGet = function(req, res) {
 	log('in attendeeCreateGet');
 
@@ -71,10 +71,10 @@ exports.attendeeCreateGet = function(req, res) {
 			res.send('success: uploaded oneTestAttendee');
 		}
 	});
-	*/
+	
 	res.send('not implemented: attendeeCreateGet');
 }
-
+*/
 
 exports.attendeeCreatePost = function(req, res) {
 	log('in attendeeCreatePost');
