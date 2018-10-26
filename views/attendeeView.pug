@@ -47,7 +47,9 @@ block content
 						each item in data.attendeeInQueues
 							div(class='col-sm-4')
 								| #{item.queue.attractionName}
-							div(class='col-sm-8')
+							div(class='col-sm-4')
+								| place #{item.queue.placeInQueue}
+							div(class='col-sm-4')
 								span(class='button'
 									onclick='handleQueueChange(event)'
 									data-queue-change-url=item.queue.url + '/removeAttendee/:' + item.attendee

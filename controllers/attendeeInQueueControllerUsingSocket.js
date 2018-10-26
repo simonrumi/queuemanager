@@ -8,6 +8,12 @@ const log = require('../logger');
 
 log('in attendeeController, required models/attendeeInQueue');
 
+
+/****
+QQQQ somewhere in here need to have a function to figure out the place the attended holds in each queues
+this should be available for the broadcast of queueUpdated in socketConnection.js
+****/
+
 exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 	// getting a string like this
 	// "http://localhost:3000/venue/queue/:5b955e0779162e4850cca443/addAttendee/:5b95de92d3c3e74174a7777a"
@@ -37,7 +43,8 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 								reject('error trying to upload oneAttendeeInQueue: ' + err);
 								return;
 							} else {
-								log('success: uploaded oneAttendeeInQueue');
+								log('\nsuccess: uploaded oneAttendeeInQueue');
+								//log('...and results = \n' + JSON.stringify(results) + '\n');
 								callback(null, results);
 							}
 						});
@@ -58,6 +65,7 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 				attendeeInQueues: function(callback) {
 					AttendeeInQueueModel.find({'attendee': attendeeId}).populate('queue').exec(callback);
 				},
+
 			},
 			function(err, results) {
 				//log('addAttendeeToQueueUsingSocket.async.parallel() results = \n' + JSON.stringify(results));
@@ -69,14 +77,38 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 					callback(null, results);
 				}
 			});
+		}, function(callback) {
+			//having got attendeeInQueues we need to find out the attendee's place in the queue (s)he just joined
+			let placeInQueue = 0;
+			let placeInQueueResults = {};
+			let i;
+			AttendeeInQueueModel.find({'queue': queueId}).sort({timeJoined: 'ascending'}).exec(function(err, results) {
+				if (err) {
+					reject('Error trying to get all the queues attendee is in: ' + err);
+					return;
+				} else {
+					// this returns a list of attendees in a single queue, ordered by the time each attendee joined the queue
+					//log('\naddAttendeeToQueue found queues with the id ' + queueId + ':\n' + results + '\n');
+					for (i in results) {
+						placeInQueue++;
+						if (results[i].attendee == attendeeId) {
+							results.placeInQueue = placeInQueue;
+							//log('got placeInQueue = ' + placeInQueue + '\n results are now: \n' + JSON.stringify(results) + '\n');
+							break;
+						}
+					}
+					placeInQueueResults = {'placeInQueue': placeInQueue}
+					callback(null, placeInQueueResults);
+				}
+			});
 		}], function(err, results) {
-			//log('addAttendeeToQueueUsingSocket.async.series() results = \n' + JSON.stringify(results));
+			//log('addAttendeeToQueueUsingSocket.async.series() results = \n' + JSON.stringify(results) + '\n');
 			if(err) {
 				reject('Error in addAttendeeToQueueUsingSocket: ' + err);
 			} else {
 				let finalResults = results[1]; // results is an array with the first element being some stuff we don't need, but the 2nd element has what we want in it
-				//log('addAttendeeToQueueUsingSocket: finalResults = ' + JSON.stringify(finalResults));
 				finalResults.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(finalResults.attendeeInQueues, finalResults.queues);
+				log('\naddAttendeeToQueueUsingSocket: finalResults = ' + JSON.stringify(finalResults) +'\n');
 				resolve({data: finalResults});
 			}
 		}

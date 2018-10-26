@@ -44,6 +44,10 @@ const initSocketConnection = function() {
 		setAttendeeCookie();
 	});
 
+	socket.on('queueUpdated', function(data) {
+		document.querySelector('#attendee-core-dynamic-info').innerHTML = data;
+	});
+
 	socket.on('disconnect', function(){
 		console.log('socket io disconnected');
 	});

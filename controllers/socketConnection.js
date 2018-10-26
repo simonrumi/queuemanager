@@ -49,6 +49,7 @@ const socketConn = {
             // Render the Pug template for attendeeView, using the data we just got, then send it to the client
             let renderedAttendeeView = attendeeSubViewRenderer(leaveQueueResponse);
             io.emit('leaveQueueResponse', renderedAttendeeView);
+            //socket.broadcast.emit('queueUpdated', renderedAttendeeView); //some issue with this io.broadcast.emit doesn't work either
           }, function(err) {
             //log('\n returned to app.js with an error after calling removeAttendeeFromQueueUsingSocket, leaveQueueResponse = ' + JSON.stringify(leaveQueueResponse));
             io.emit('leaveQueueResponse', JSON.stringify(err));
