@@ -4,37 +4,62 @@ h2
 	| Queues to Join
 
 div(class='container-fluid')
-	div(class='row')
+	div(class='row left-border')
 		each queue in data.queuesAttendeeIsNotIn
-			div(class='col-sm-4')
-				| #{queue.attractionName}
-			div(class='col-sm-8')
-				span(class='button'
-					onclick='handleQueueChange(event)'
-					data-queue-change-url=queue.url + '/addAttendee/:' + data.attendee._id
-					data-queue-change-type='join')
-					| join queue
+			div(class='row')
+				div(class='col-xs-12 left-spacing-small')
+					h3
+						| #{queue.attractionName}
+			div(class='row')
+				div(class='col-xs-4 left-spacing-large')
+					| Average wait time
+				div(class='col-xs-4')
+					| tbd
+				div(class='col-xs-4')
+			div(class='row')
+				div(class='col-xs-12 left-spacing-large')
+					span(class='button'
+						onclick='handleQueueChange(event)'
+						data-queue-change-url=queue.url + '/addAttendee/:' + data.attendee._id
+						data-queue-change-type='join')
+						| join queue
 		else
-			div(class='col-sm-4')
-				| no queues to join
+			div(class='row')
+				div(class='col-xs-12 left-spacing-small')
+					| no queues to join
 
 h2
-	| Queues Attendee Is In
+	| Queues You're In
 
 div(class='container-fluid')
-	div(class='row')
+	div(class='row left-border')
 		each item in data.attendeeInQueues
-			div(class='col-sm-4')
-				| #{item.queue.attractionName}
-			div(class='col-sm-4')
-				| place #{item.queue.placeInQueue}
-			div(class='col-sm-4')
-				span(class='button'
-					onclick='handleQueueChange(event)'
-					data-queue-change-url=item.queue.url + '/removeAttendee/:' + item.attendee
-					data-queue-change-type='leave')
-					| leave queue
+			div(class='row')
+				div(class='col-xs-12 left-spacing-small')
+					h3
+						| #{item.queue.attractionName}
+			div(class='row')
+				div(class='row')
+					div(class='col-xs-4 left-spacing-large')
+						| place
+					div(class='col-xs-4')
+						| #{item.placeInQueue}
+					div(class='col-xs-4')
+				div(class='row')
+					div(class='col-xs-4 left-spacing-large')
+						| time joined
+					div(class='col-xs-4')
+						| #{item.timeJoined}
+					div(class='col-xs-4')
+				div(class='row')
+					div(class='col-xs-12 left-spacing-large')
+						span(class='button'
+							onclick='handleQueueChange(event)'
+							data-queue-change-url=item.queue.url + '/removeAttendee/:' + item.attendee
+							data-queue-change-type='leave')
+							| leave queue
 
 		else
-			div(class='col-sm-4')
-				| not in any queues
+			div(class='row')
+				div(class='col-xs-12 left-spacing-small')
+					| not in any queues

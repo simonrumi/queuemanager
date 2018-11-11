@@ -27,6 +27,7 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 				//log('In addAttendeeToQueue(), started the AttendeeInQueueModel.find() callback function');
 				if (err) {
 					reject('error trying to search the AttendeeInQueue table: ' + err);
+					return;
 				} else {
 					//log('\n search for the attendee ' + attendeeId + ' in queue ' + queueId + ' returned ' + JSON.stringify(results) + '\n');
 
@@ -36,16 +37,31 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 						(results.constructor === Array && results.length === 0) ||
 						(results.constructor === Object && Object.keys(results).length === 0)) {
 
-						let oneAttendeeInQueue = new AttendeeInQueueModel({'attendee': attendeeId, 'queue': queueId, 'timeJoined': new Date()});
-						oneAttendeeInQueue.save(function(err) {
+						// the attendee's place in the queue is going to be the current length of the queue + 1
+						AttendeeInQueueModel.where({'queue': queueId}).countDocuments(function(err, count) {
+							log('\n Count of attendees in queue with the id ' + queueId + ' == ' + count + '\n');
 							if (err) {
-								log('error trying to upload oneAttendeeInQueue: ' + err);
-								reject('error trying to upload oneAttendeeInQueue: ' + err);
-								return;
+								log('\nError getting count of attendees in queue with id ' + queueId + ' :\n' + err);
+								reject('\nError getting count of attendees in queue with id ' + queueId + ' :\n' + err);
 							} else {
-								log('\nsuccess: uploaded oneAttendeeInQueue');
-								//log('...and results = \n' + JSON.stringify(results) + '\n');
-								callback(null, results);
+								const newAttendeePlaceInQueue = count + 1;
+								let oneAttendeeInQueue = new AttendeeInQueueModel({
+									'attendee': attendeeId,
+									'queue': queueId,
+									'timeJoined': new Date(),
+									'placeInQueue': newAttendeePlaceInQueue,
+								});
+								oneAttendeeInQueue.save(function(err) {
+									if (err) {
+										log('error trying to upload oneAttendeeInQueue: ' + err);
+										reject('error trying to upload oneAttendeeInQueue: ' + err);
+										return;
+									} else {
+										log('\nsuccess: uploaded oneAttendeeInQueue');
+										//log('...and results = \n' + JSON.stringify(results) + '\n');
+										callback(null, results);
+									}
+								});
 							}
 						});
 					} else {

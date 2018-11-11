@@ -5,8 +5,9 @@ const AttendeeInQueueSchema = new Schema({
 	attendee: {type: Schema.Types.ObjectId, ref: 'Attendee', required: true},
 	queue: {type: Schema.Types.ObjectId, ref: 'Queue', required: true},
 	timeJoined: {type: Date, required: true},
+	placeInQueue: {type: Number, required: true},
 });
-	
+
 AttendeeInQueueSchema.virtual('url').get(function() {
 	return '/venue/queue/:' + this._id;
 });

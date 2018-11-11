@@ -1,3 +1,26 @@
+h1 {
+	font-size: 3em;
+	color: #8C0100;
+}
+
+h2 {
+	font-size: 2em;
+	color: #8C0100;
+}
+
+h3 {
+	font-size: 1.5em;
+	color: #8C0100;
+}
+
+.left-spacing-small {
+	margin-left: 0.3em;
+}
+
+.left-spacing-large {
+	margin-left: 2em;
+}
+
 .sidebar-nav {
 	margin-top: 20px;
 	padding: 0;
@@ -8,6 +31,15 @@
 	display: none;
 }
 
+.left-border {
+	border-left: 2px solid #8C0100;
+}
+
 .button {
-	background-color: #77bb77;
+	display: inline-block;
+	border-radius: 0.5em;
+	background-color: #007423;
+	color: #ffffff;
+	padding: 0.5em;
+	margin: 0.6em 0;
 }
