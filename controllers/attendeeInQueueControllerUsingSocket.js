@@ -8,11 +8,48 @@ const log = require('../logger');
 
 log('in attendeeController, required models/attendeeInQueue');
 
+exports.updateQueuePlaces = function(data, resolve, reject) {
+	// data contains something like this
+	// http://localhost:3000/venue/queue/:5b955db0b9d438472078dbf9/removeAttendee/:5b95ddf5af21a2333ceb4795
+	let queueId = data.match(/queue\/:([^\/]*)/)[1];
+	let attendeeId = data.match(/removeAttendee\/:([^\/]*)/)[1];
+	var resultsList = {'errors': [], 'successes': []};
 
-/****
-QQQQ somewhere in here need to have a function to figure out the place the attended holds in each queues
-this should be available for the broadcast of queueUpdated in socketConnection.js
-****/
+	AttendeeInQueueModel.find({'queue': queueId}).sort({timeJoined: 'ascending'}).exec(function(err, results) {
+		if (err) {
+			log('updateQueuePlaces: error trying to find the queue with queueId ' + data.queueId  + ' : ' + err);
+			reject('updateQueuePlaces: error trying to find the queue with queueId ' + data.queueId  + ' : ' + err);
+			return;
+		} else {
+			//log('updateQueuePlaces, got results ' + JSON.stringify(results));
+			//update all the placeInQueue values for all the attendees in the queue that need it
+			// start by going through the list of attendees, which is in order, and make sure their place is matching what it should be
+			let i;
+
+			/// TODO problem here with the for list - it runs the whole thing, calls resolve(),
+			// but then after that the updates acutally happen
+			/// need to use async somehow
+			for (i = 0; i < results.length; i++) {
+				if (results[i].placeInQueue && results[i].placeInQueue == (i + 1)) {
+					log('\nplaceInQueue is already correct:\n' + JSON.stringify(results[i]));
+				} else {
+					log('\nplaceInQueue needs to be updated:\n' + JSON.stringify(results[i]));
+					AttendeeInQueueModel.update({'attendee': results[i].attendee, 'queue': queueId}, {placeInQueue: i}, function(err, data) {
+						if (err) {
+							log('\nWARNING: could not update placeInQueue to : ' + i + ' : ' + err);
+							resultsList.errors.push('WARNING: could not update placeInQueue to : ' + i + ' : ' + err);
+						} else {
+							log('\nSuccess: updated placeInQueue to ' + i);
+							resultsList.successes.push('Success: updated placeInQueue to ' + i)
+						}
+					});
+				}
+			}
+			log('\nabout to return from updateQueuePlaces with resultsList:\n' + JSON.stringify(resultsList));
+			resolve(resultsList);
+		}
+	});
+}
 
 exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 	// getting a string like this

@@ -49,7 +49,13 @@ div(class='container-fluid')
 					div(class='col-xs-4 left-spacing-large')
 						| time joined
 					div(class='col-xs-4')
-						| #{item.timeJoined}
+						-
+							// getting a string like Wed Nov 14 2018 07:28:44 GMT-0800 (Pacific Standard Time)
+							let longDate = new String(item.timeJoined);
+							let regex = new RegExp(/^(\w+ \w+ \d+ )\d+ (\d+:\d+)/);
+							let shortDateArr = longDate.match(regex);
+							let shortDate = shortDateArr[1] + shortDateArr[2]; // this concatenates the 1st and 2nd group captured in the match above
+						p= shortDate
 					div(class='col-xs-4')
 				div(class='row')
 					div(class='col-xs-12 left-spacing-large')

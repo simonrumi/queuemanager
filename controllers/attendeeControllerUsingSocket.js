@@ -10,7 +10,7 @@ const log = require('../logger');
 exports.attendeeDetailUsingSocket = function(data, resolve, reject) {
 	//log('in attendeeDetailUsingSocket, got data: ' + JSON.stringify(data) + ', and got attendeeId = ' + data.attendeeId);
 	let attendeeId = data.attendeeId;
-	
+
 	async.parallel({
 		queues: function(callback) {
 			QueueModel.find({}, callback);
@@ -35,7 +35,7 @@ exports.attendeeDetailUsingSocket = function(data, resolve, reject) {
 }
 
 
-// note that actually we expect data to be null, but keeping the function signature the same as the others	
+// note that actually we expect data to be null, but keeping the function signature the same as the others
 exports.attendeeCreateGet = function(data, resolve, reject) {
 	log('in attendeeCreateGet');
 
@@ -49,14 +49,14 @@ exports.attendeeCreateGet = function(data, resolve, reject) {
 						log('error trying to create a new attendee: ' + err);
 						reject('error trying to create a new attendee: ' + err);
 					} else {
-						log('success: uploaded a new attendee, got results: ' + JSON.stringify(results));
+						log('\nsuccess: uploaded a new attendee, got results: ' + JSON.stringify(results));
 						attendeeId = results._id;
 						callback(null, {data: results});
 					}
 				});
 			},
 			function(callback) {
-				log('starting async.parallel after running newAttendee.save');
+				log('\nstarting async.parallel after running newAttendee.save, attendeeId is ' + attendeeId);
 				async.parallel({
 					queues: function(callback) {
 						QueueModel.find({}, callback);
@@ -91,5 +91,5 @@ exports.attendeeCreateGet = function(data, resolve, reject) {
 				resolve({data: finalResults});
 		}
 	});
-	
+
 }
