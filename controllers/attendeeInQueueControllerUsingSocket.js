@@ -13,40 +13,46 @@ exports.updateQueuePlaces = function(data, resolve, reject) {
 	// http://localhost:3000/venue/queue/:5b955db0b9d438472078dbf9/removeAttendee/:5b95ddf5af21a2333ceb4795
 	let queueId = data.match(/queue\/:([^\/]*)/)[1];
 	let attendeeId = data.match(/removeAttendee\/:([^\/]*)/)[1];
-	var resultsList = {'errors': [], 'successes': []};
 
-	AttendeeInQueueModel.find({'queue': queueId}).sort({timeJoined: 'ascending'}).exec(function(err, results) {
+	AttendeeInQueueModel.find({'queue': queueId}).sort({timeJoined: 'ascending'}).exec(function(err, attendeesInOneQueue) {
 		if (err) {
 			log('updateQueuePlaces: error trying to find the queue with queueId ' + data.queueId  + ' : ' + err);
 			reject('updateQueuePlaces: error trying to find the queue with queueId ' + data.queueId  + ' : ' + err);
 			return;
 		} else {
+			var resultsList = {'errors': [], 'successes': [], 'noUpdatesNeeded': []};
 			//log('updateQueuePlaces, got results ' + JSON.stringify(results));
 			//update all the placeInQueue values for all the attendees in the queue that need it
-			// start by going through the list of attendees, which is in order, and make sure their place is matching what it should be
-			let i;
-
-			/// TODO problem here with the for list - it runs the whole thing, calls resolve(),
-			// but then after that the updates acutally happen
-			/// need to use async somehow
-			for (i = 0; i < results.length; i++) {
-				if (results[i].placeInQueue && results[i].placeInQueue == (i + 1)) {
-					log('\nplaceInQueue is already correct:\n' + JSON.stringify(results[i]));
+			// by going through the list of attendeesInOneQueue, which is in order, and make sure their placeInQueue is matching the position in the list of attendeesInOneQueue
+			async.eachOf(attendeesInOneQueue, function(item, index, callback) {
+				if (item.placeInQueue && item.placeInQueue == index+1) {
+					//log('\nplaceInQueue at index ' + index + ' is already correct:\n' + JSON.stringify(item));
+					resultsList.noUpdatesNeeded.push(index + 1);
 				} else {
-					log('\nplaceInQueue needs to be updated:\n' + JSON.stringify(results[i]));
-					AttendeeInQueueModel.update({'attendee': results[i].attendee, 'queue': queueId}, {placeInQueue: i}, function(err, data) {
+					//log('\nplaceInQueue at index ' + index + ' needs to be updated for item:\n' + JSON.stringify(item));
+					AttendeeInQueueModel.update({'attendee': item.attendee, 'queue': queueId}, {placeInQueue: index+1}, function(err, data) {
 						if (err) {
-							log('\nWARNING: could not update placeInQueue to : ' + i + ' : ' + err);
-							resultsList.errors.push('WARNING: could not update placeInQueue to : ' + i + ' : ' + err);
+							//log('\nWARNING: could not update placeInQueue to : ' + (index + 1) + ' : ' + err);
+							resultsList.errors.push('WARNING: could not update placeInQueue to : ' + (index + 1) + ' : ' + err);
 						} else {
-							log('\nSuccess: updated placeInQueue to ' + i);
-							resultsList.successes.push('Success: updated placeInQueue to ' + i)
+							//log('\nSuccess: updated placeInQueue to ' + index+1);
+							resultsList.successes.push(index + 1);
 						}
 					});
 				}
-			}
-			log('\nabout to return from updateQueuePlaces with resultsList:\n' + JSON.stringify(resultsList));
-			resolve(resultsList);
+				callback();
+				return;
+			}, function(err, results) {
+				if (err) {
+					//log('\nError in updateQueuePlaces: ' + JSON.stringify(err));
+					reject('\nError in updateQueuePlaces: ' + JSON.stringify(err));
+					return;
+				} else {
+					//log('\nupdateQueuePlaces, resolving with resultsList:\n' + JSON.stringify(resultsList) + '\n');
+					resolve(resultsList);
+					return;
+				}
+			});
 		}
 	});
 }
@@ -118,7 +124,6 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 				attendeeInQueues: function(callback) {
 					AttendeeInQueueModel.find({'attendee': attendeeId}).populate('queue').exec(callback);
 				},
-
 			},
 			function(err, results) {
 				//log('addAttendeeToQueueUsingSocket.async.parallel() results = \n' + JSON.stringify(results));
