@@ -166,7 +166,7 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 			} else {
 				let finalResults = results[1]; // results is an array with the first element being some stuff we don't need, but the 2nd element has what we want in it
 				finalResults.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(finalResults.attendeeInQueues, finalResults.queues);
-				log('\naddAttendeeToQueueUsingSocket: finalResults = ' + JSON.stringify(finalResults) +'\n');
+				//log('\naddAttendeeToQueueUsingSocket: finalResults = ' + JSON.stringify(finalResults) +'\n');
 				resolve({data: finalResults});
 			}
 		}

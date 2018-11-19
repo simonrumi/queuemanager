@@ -5,9 +5,9 @@ const main = function() {
 	socketIoConnection = initSocketConnection();
 	let attendeeId = recoverAttendeeId();
 	if (attendeeId) {
-		socketIoConnection.emit('knownAttendee', {'attendeeId': attendeeId});
+		socketIoConnection.emit('clientFoundKnownAttendee', {'attendeeId': attendeeId});
 	} else {
-		socketIoConnection.emit('unknownAttendee', {});
+		socketIoConnection.emit('clientFoundUnknownAttendee', {});
 	}
 }
 
@@ -17,26 +17,26 @@ const initSocketConnection = function() {
 	console.log('socketLocation = ' + socketLocation);
 	const socket = io(socketLocation);
 
-	socket.on('connect', function(){
+	socket.on('connect', function() {
 		console.log('socket io connected');
 	});
 
-	socket.on('joinQueueResponse', function(data){
+	socket.on('joinQueueResponse', function(data) {
 		//console.log('socket io got a joinQueueResponse with data: ' + JSON.stringify(data));
 		document.querySelector('#attendee-core-dynamic-info').innerHTML = data;
 	});
 
-	socket.on('leaveQueueResponse', function(data){
+	socket.on('leaveQueueResponse', function(data) {
 		//console.log('socket io got a leaveQueueResponse with data: ' + JSON.stringify(data));
 		document.querySelector('#attendee-core-dynamic-info').innerHTML = data;
 	});
 
-	socket.on('knownAttendeeResponse', function(data){
+	socket.on('knownAttendeeResponse', function(data) {
 		//console.log('socket io got a leaveQueueResponse with data: ' + JSON.stringify(data));
 		document.querySelector('#attendee-core-dynamic-info').innerHTML = data;
 	});
 
-	socket.on('unknownAttendeeResponse', function(data){
+	socket.on('unknownAttendeeResponse', function(data) {
 		//console.log('socket io got a leaveQueueResponse with data: ' + JSON.stringify(data));
 		//a new attendee is created
 		document.querySelector('#attendee-core-dynamic-info').innerHTML = data;
@@ -83,7 +83,7 @@ const setAttendeeCookie = function() {
 			document.cookie = "attendeeId=" + attendeeId;
 			console.log('setAttendeeCookie: attendeeId=' + attendeeId);
 		}
-		
+
 };
 
 document.addEventListener('DOMContentLoaded', main);
