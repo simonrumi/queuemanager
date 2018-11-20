@@ -2,6 +2,10 @@ const http = require('http');
 const log = require('../logger');
 const attendeeInQueueControllerUsingSocket = require('./attendeeInQueueControllerUsingSocket');
 const attendeeControllerUsingSocket = require('./attendeeControllerUsingSocket');
+const QueueModel = require('../models/queueModel');
+const async = require('async');
+const HelperFunctions = require('./helperFunctions');
+
 let io = null;
 
 /***************************** pug stuff *************************************/
@@ -27,10 +31,12 @@ const socketConn = {
       });
 
       io.on('connect', function(socket) {
-        log('a user connected, socket.id is:\n' + socket.id + '\n');
+        log('a user connected, socket.id is: ' + socket.id);
         var uniqueSocketId = socket.id;
 
-        socket.on('joinQueue', function(data, socket) {
+        //createRoomForEachQueue(socket);
+
+        socket.on('joinQueue', function(data) {
           log('an attendee wants to join a queue; data given is: ' + data);
           attendeeInQueueControllerUsingSocket.addAttendeeToQueueUsingSocket(data, function(joinQueueResponse) {
             //log('returned to app.js after calling addAttendeeToQueueUsingSocket, joinQueueResponse = ' + JSON.stringify(joinQueueResponse));
@@ -43,8 +49,13 @@ const socketConn = {
           });
         });
 
-        socket.on('leaveQueue', function(data, socket) {
-          log('an attendee wants to leave a queue; data given is: ' + data);
+        socket.on('joinRoom', function(roomName) {
+          socket.join(roomName);
+          log('user joined room ' + roomName);
+        });
+
+        socket.on('leaveQueue', function(data) {
+          log('\nan attendee wants to leave a queue; data given is: ' + JSON.stringify(data));
           attendeeInQueueControllerUsingSocket.removeAttendeeFromQueueUsingSocket(data, function(leaveQueueResponse) {
             //log('\n returned to app.js after calling removeAttendeeFromQueueUsingSocket, leaveQueueResponse = ' + JSON.stringify(leaveQueueResponse));
             // Render the Pug template for attendeeView, using the data we just got, then send it to the client
@@ -53,16 +64,20 @@ const socketConn = {
 
             attendeeInQueueControllerUsingSocket.updateQueuePlaces(data, function(results) {
               log('\n updateQueuePlaces results:\n' + JSON.stringify(results));
-              // TODO get this broadcast thing working
-              //socket.broadcast.emit('queueUpdated', renderedAttendeeView); //some issue with this io.broadcast.emit doesn't work either
+              let roomName = data.queueName;
+              io.to(roomName).emit('queueUpdated', {'roomName': roomName, 'changedQueuePlaces': results.changedQueuePlaces});
             }, function(err) {
               log('updateQueuePlaces error: ' + err);
-              io.to(`${uniqueSocketId}`).emit('updateQueuePlacesResponse', err);
+              io.to(`${uniqueSocketId}`).emit('updateQueuePlaces', err);
             });
           }, function(err) {
-            //log('\n returned to app.js with an error after calling removeAttendeeFromQueueUsingSocket, leaveQueueResponse = ' + JSON.stringify(leaveQueueResponse));
             io.to(`${uniqueSocketId}`).emit('leaveQueueResponse', err);
           });
+        });
+
+        socket.on('leaveRoom', function(roomName) {
+          socket.leave(roomName);
+          log('user left room ' + roomName);
         });
 
         socket.on('clientFoundKnownAttendee', function(data, socket) {
@@ -90,9 +105,30 @@ const socketConn = {
           log('the user disconnected');
         });
       });
+
       return io;
     }
   }
+}
+
+// might not want this
+const createRoomForEachQueue = function(socket) {
+  QueueModel.find({}).exec(function(err, allQueues) {
+    async.eachOf(allQueues, function(item, index, callback) {
+      //strip spaces from the queue name so we can use it as a socket room name
+      let words = new String(item.attractionName).split(' ');
+      let roomName = HelperFunctions.glueWordsTogether(words);
+      log('making a socket room called ' + roomName);
+      socket.join(roomName);
+      callback();
+    }, function(err, results) {
+      if (err) {
+        log('\ncreateRoomForEachQueue error: ' + err);
+      } else {
+        log('\ncreateRoomForEachQueue: success!');
+      }
+    });
+  });
 }
 
 module.exports = socketConn;

@@ -45,7 +45,44 @@ const initSocketConnection = function() {
 	});
 
 	socket.on('queueUpdated', function(data) {
-		document.querySelector('#attendee-core-dynamic-info').innerHTML = data;
+		console.log('got queueUpdated message with data: ' + JSON.stringify(data));
+		//got some data like this
+		//{"roomName":"SpaceMountain","changedQueuePlaces":{"5bf2c169f060b123745a76f9":20, "5bf44b2377cae226fc05037d": 19}}
+		// so need to update the queue place for the given roomName, if our attendeeId is in the list
+		let changedQueuePlace;
+		let attendeeId = getAttendeeIdFromInfoDiv();
+		for (let idAsKey in data.changedQueuePlaces) {
+			if (idAsKey == attendeeId) {
+				changedQueuePlace = data.changedQueuePlaces[idAsKey];
+				console.log('need to changedQueuePlace for ' + data.roomName + ' to ' + changedQueuePlace);
+				let possibleQueuePlacesToChange = document.querySelectorAll('.place-in-queue');
+				for (let i=0; i < possibleQueuePlacesToChange.length; i++) {
+					let attractionNameWithSpaces = possibleQueuePlacesToChange[i].dataset.attractionName;
+					let attractionNameParts = attractionNameWithSpaces.split(' ');
+					let attractionNameWithoutSpaces = glueWordsTogether(attractionNameParts);
+					console.log('attractionNameWithoutSpaces = ' + attractionNameWithoutSpaces);
+					if (attractionNameWithoutSpaces == data.roomName) {
+						TweenMax.to(
+							possibleQueuePlacesToChange[i],
+							1, // seconds of animation
+							{
+								opacity: 0.0,
+								color: '#ff0000',
+								onComplete: function() {
+									possibleQueuePlacesToChange[i].innerText = changedQueuePlace;
+									TweenMax.to(
+										possibleQueuePlacesToChange[i],
+										1, // seconds of animation
+										{opacity: 1.0, color: '#000000'}
+									)
+								}
+							}
+						);
+					}
+				}
+				break;
+			}
+		}
 	});
 
 	socket.on('disconnect', function(){
@@ -53,6 +90,24 @@ const initSocketConnection = function() {
 	});
 
 	return socket;
+}
+
+//send message to server to have the attendee either join or leave a queue
+const handleQueueChange = function(event) {
+	let queueChangeUrl = window.location.origin + event.target.dataset.queueChangeUrl;
+	let queueChangeType = event.target.dataset.queueChangeType + 'Queue'; // makes the string 'joinQueue' or 'leaveQueue'
+	let queueNameArr = new String(event.target.dataset.queueName).split(' ');
+	let queueName = glueWordsTogether(queueNameArr);
+	socketIoConnection.emit(queueChangeType, {'queueChangeUrl': queueChangeUrl, 'queueName': queueName});
+	console.log('\n queueName = ' + queueName + ', queueChangeUrl = ' + queueChangeUrl, );
+
+	if (queueChangeType == 'joinQueue') {
+		socketIoConnection.emit('joinRoom', queueName);
+	} else if (queueChangeType == 'leaveQueue') {
+		socketIoConnection.emit('leaveRoom', queueName);
+	} else {
+		console.log('ERROR: queueChangeType was neither joinQueue nor leaveQueue');
+	}
 }
 
 const recoverAttendeeId = function() {
@@ -66,15 +121,6 @@ const recoverAttendeeId = function() {
 	}
 }
 
-//send message to server to have the attendee either join or leave a queue
-const handleQueueChange = function(event) {
-	let queueChangeUrl = window.location.origin + event.target.dataset.queueChangeUrl;
-	let queueChangeType = event.target.dataset.queueChangeType + 'Queue'; // makes the string 'joinQueue' or 'leaveQueue'
-	socketIoConnection.emit(queueChangeType, queueChangeUrl);
-
-	console.log('queueChangeUrl = ' + queueChangeUrl);
-}
-
 const setAttendeeCookie = function() {
 		const attendeeInfoDiv = document.querySelector('#attendee-info');
 		let attendeeId;
@@ -83,7 +129,36 @@ const setAttendeeCookie = function() {
 			document.cookie = "attendeeId=" + attendeeId;
 			console.log('setAttendeeCookie: attendeeId=' + attendeeId);
 		}
-
 };
+
+const getAttendeeIdFromInfoDiv = function() {
+	const attendeeInfoDiv = document.querySelector('#attendee-info');
+	if (attendeeInfoDiv) {
+		return attendeeInfoDiv.dataset.attendeeid;
+	} else {
+		return null;
+	}
+}
+
+// note that this is the same function as in HelperFunctions on the server
+// is there a way not to have 2 copies of this?
+const glueWordsTogether = function (words, roomName) {
+	if (!roomName) {
+		roomName = '';
+	}
+	if (words.length > 0) {
+		let wordsLeft = words.slice();
+		let nextWord = wordsLeft.pop();
+		if (words.length == 1) {
+			return nextWord + roomName;
+		} else {
+			return glueWordsTogether(wordsLeft, (nextWord + roomName));
+		}
+	} else {
+		// shouldn't really have this case where words.length == 0
+		// but just in case
+		return roomName;
+	}
+}
 
 document.addEventListener('DOMContentLoaded', main);
