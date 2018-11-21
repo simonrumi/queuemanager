@@ -3,16 +3,39 @@ const AttendeeModel = require('../models/attendeeModel');
 const QueueModel = require('../models/queueModel');
 const HelperFunctions = require('./helperFunctions');
 const getQueuesAttendeeIsNotIn = HelperFunctions.getQueuesAttendeeIsNotIn;
+const getQueueIdFromQueueChangeUrl = HelperFunctions.getQueueIdFromQueueChangeUrl;
+const getAttendeeIdFromQueueChangeUrl = HelperFunctions.getAttendeeIdFromQueueChangeUrl;
 const async = require('async');
 const log = require('../logger');
 
 log('in attendeeController, required models/attendeeInQueue');
 
+/**
+* for general reference
+* queue change data contains something like this
+*	{ queueChangeUrl: 'http://localhost:3000/venue/queue/:5b955db0b9d438472078dbf9/removeAttendee/:5b95ddf5af21a2333ceb4795'
+*	queueName: 'soemQueueName' }
+*	(url could contain addAttendee or removeAttendee)
+**/
+
+//when an attendee joins or leaves a queue, this is to update the length of the queue for all attendees not already in that queue
+exports.updateQueueLength = function(data, resolve, reject) {
+	let queueId = getQueueIdFromQueueChangeUrl(data.queueChangeUrl);
+
+	AttendeeInQueueModel.where({'queue': queueId}).countDocuments(function(err, count) {
+		if (err) {
+			log('\nError getting count of attendees in queue with id ' + queueId + ' :\n' + err);
+			reject('\nError getting count of attendees in queue with id ' + queueId + ' :\n' + err);
+		} else {
+			log('\nupdateQueueLength got attractionName: ' + data.queueName + ', changedQueueLength: ' + count)
+			resolve({'attractionName': data.queueName, 'changedQueueLength': count});
+		}
+	});
+}
+
+///when attendee A leaves a queue this is to get the updated placeInQueue values for all the attendees that were behind attendee A in the queue
 exports.updateQueuePlaces = function(data, resolve, reject) {
-	// data contains something like this
-	// { queueChangeUrl: 'http://localhost:3000/venue/queue/:5b955db0b9d438472078dbf9/removeAttendee/:5b95ddf5af21a2333ceb4795'
-	// queueName: 'soemQueueName' }
-	let queueId = data.queueChangeUrl.match(/queue\/:([^\/]*)/)[1];
+	let queueId = getQueueIdFromQueueChangeUrl(data.queueChangeUrl);
 
 	AttendeeInQueueModel.find({'queue': queueId}).sort({timeJoined: 'ascending'}).exec(function(err, attendeesInOneQueue) {
 		if (err) {
@@ -63,13 +86,11 @@ exports.updateQueuePlaces = function(data, resolve, reject) {
 }
 
 exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
-	// getting a string like this
-	// { queueChangeUrl: 'http://localhost:3000/venue/queue/:5b955db0b9d438472078dbf9/removeAttendee/:5b95ddf5af21a2333ceb4795'
-	// queueName: 'soemQueueName' }
-	let queueId = data.queueChangeUrl.match(/queue\/:([^\/]*)/)[1];
-	let attendeeId = data.queueChangeUrl.match(/addAttendee\/:([^\/]*)/)[1];
+	let queueId = getQueueIdFromQueueChangeUrl(data.queueChangeUrl);
+	let attendeeId = getAttendeeIdFromQueueChangeUrl(data.queueChangeUrl);
 
 	async.series([
+		//first in series: add the attendee to the queue
 		function(callback) {
 			// only add the attendee to the queue if (s)he is not already in it
 			AttendeeInQueueModel.find({'attendee': attendeeId, 'queue': queueId}, function(err, results) {
@@ -119,7 +140,10 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 					}
 				}
 			});
-		}, function(callback) {
+		},
+
+		// 2nd in series: get all the data to update the attendee detail page
+		function(callback) {
 			async.parallel({
 				queues: function(callback) {
 					QueueModel.find({}, callback);
@@ -131,6 +155,7 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 					AttendeeInQueueModel.find({'attendee': attendeeId}).populate('queue').exec(callback);
 				},
 			},
+			// callback() for the parallel tasks immediately above
 			function(err, results) {
 				//log('addAttendeeToQueueUsingSocket.async.parallel() results = \n' + JSON.stringify(results));
 				if(err) {
@@ -141,8 +166,10 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 					callback(null, results);
 				}
 			});
-		}, function(callback) {
-			//having got attendeeInQueues we need to find out the attendee's place in the queue (s)he just joined
+		},
+
+		// 3rd in series: find out the attendee's place in the queue (s)he just joined
+		function(callback) {
 			let placeInQueue = 0;
 			let placeInQueueResults = {};
 			let i;
@@ -156,8 +183,7 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 					for (i in results) {
 						placeInQueue++;
 						if (results[i].attendee == attendeeId) {
-							results.placeInQueue = placeInQueue;
-							//log('got placeInQueue = ' + placeInQueue + '\n results are now: \n' + JSON.stringify(results) + '\n');
+							//log('got placeInQueue = ' + placeInQueue);
 							break;
 						}
 					}
@@ -165,14 +191,17 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 					callback(null, placeInQueueResults);
 				}
 			});
-		}], function(err, results) {
+		}],
+
+		// having run the series of tasks, this is the callback() that returns the results
+		function(err, results) {
 			//log('addAttendeeToQueueUsingSocket.async.series() results = \n' + JSON.stringify(results) + '\n');
 			if(err) {
 				reject('Error in addAttendeeToQueueUsingSocket: ' + err);
 			} else {
 				let finalResults = results[1]; // results is an array with the first element being some stuff we don't need, but the 2nd element has what we want in it
 				finalResults.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(finalResults.attendeeInQueues, finalResults.queues);
-				//log('\naddAttendeeToQueueUsingSocket: finalResults = ' + JSON.stringify(finalResults) +'\n');
+				log('\naddAttendeeToQueueUsingSocket: finalResults = ' + JSON.stringify(finalResults) +'\n');
 				resolve({data: finalResults});
 			}
 		}
@@ -180,13 +209,10 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 }
 
 exports.removeAttendeeFromQueueUsingSocket = function(data, resolve, reject) {
-	log('in removeAttendeeFromQueueUsingSocket, data = ' + JSON.stringify(data));
+	let queueId = getQueueIdFromQueueChangeUrl(data.queueChangeUrl);
+	let attendeeId = getAttendeeIdFromQueueChangeUrl(data.queueChangeUrl);
 
-	// getting a data like this
-	// { queueChangeUrl: 'http://localhost:3000/venue/queue/:5b955db0b9d438472078dbf9/removeAttendee/:5b95ddf5af21a2333ceb4795'
-	// queueName: 'soemQueueName' }
-	let queueId = data.queueChangeUrl.match(/queue\/:([^\/]*)/)[1];
-	let attendeeId = data.queueChangeUrl.match(/removeAttendee\/:([^\/]*)/)[1];
+	//log('in removeAttendeeFromQueueUsingSocket, data = ' + JSON.stringify(data));
 
 	async.series([
 		function(callback) {

@@ -48,41 +48,26 @@ const initSocketConnection = function() {
 		console.log('got queueUpdated message with data: ' + JSON.stringify(data));
 		//got some data like this
 		//{"roomName":"SpaceMountain","changedQueuePlaces":{"5bf2c169f060b123745a76f9":20, "5bf44b2377cae226fc05037d": 19}}
-		// so need to update the queue place for the given roomName, if our attendeeId is in the list
+		// so need to update the queue place for the given attractionName, if our attendeeId is in the list
 		let changedQueuePlace;
 		let attendeeId = getAttendeeIdFromInfoDiv();
 		for (let idAsKey in data.changedQueuePlaces) {
 			if (idAsKey == attendeeId) {
 				changedQueuePlace = data.changedQueuePlaces[idAsKey];
-				console.log('need to changedQueuePlace for ' + data.roomName + ' to ' + changedQueuePlace);
+				console.log('need to changedQueuePlace for ' + data.attractionName + ' to ' + changedQueuePlace);
 				let possibleQueuePlacesToChange = document.querySelectorAll('.place-in-queue');
-				for (let i=0; i < possibleQueuePlacesToChange.length; i++) {
-					let attractionNameWithSpaces = possibleQueuePlacesToChange[i].dataset.attractionName;
-					let attractionNameParts = attractionNameWithSpaces.split(' ');
-					let attractionNameWithoutSpaces = glueWordsTogether(attractionNameParts);
-					console.log('attractionNameWithoutSpaces = ' + attractionNameWithoutSpaces);
-					if (attractionNameWithoutSpaces == data.roomName) {
-						TweenMax.to(
-							possibleQueuePlacesToChange[i],
-							1, // seconds of animation
-							{
-								opacity: 0.0,
-								color: '#ff0000',
-								onComplete: function() {
-									possibleQueuePlacesToChange[i].innerText = changedQueuePlace;
-									TweenMax.to(
-										possibleQueuePlacesToChange[i],
-										1, // seconds of animation
-										{opacity: 1.0, color: '#000000'}
-									)
-								}
-							}
-						);
-					}
-				}
+				updateAttractionInfo(possibleQueuePlacesToChange, data.attractionName, changedQueuePlace);
 				break;
 			}
 		}
+	});
+
+	socket.on('queueLengthUpdated', function(data) {
+		// got some data like this
+		// {"attractionName":"SpaceMountain","changedQueueLength":25}
+		console.log('queueLengthUpdated - data = ' + JSON.stringify(data));
+		let possibleQueueLengthsToChange = document.querySelectorAll('.queue-length');
+		updateAttractionInfo(possibleQueueLengthsToChange, data.attractionName, data.changedQueueLength);
 	});
 
 	socket.on('disconnect', function(){
@@ -137,6 +122,30 @@ const getAttendeeIdFromInfoDiv = function() {
 		return attendeeInfoDiv.dataset.attendeeid;
 	} else {
 		return null;
+	}
+}
+
+const updateAttractionInfo = function(possibleElementsToChange, attractionName, newInfo) {
+	for (let i=0; i < possibleElementsToChange.length; i++) {
+		let elementToChange = possibleElementsToChange[i];
+		let attractionNameWithSpaces = elementToChange.dataset.attractionName;
+		let attractionNameParts = attractionNameWithSpaces.split(' ');
+		let attractionNameWithoutSpaces = glueWordsTogether(attractionNameParts);
+		if (attractionNameWithoutSpaces == attractionName) {
+			TweenMax.to(
+				elementToChange,
+				0.5, // seconds of animation
+				{opacity: 0.0,
+				color: '#ff0000',
+				onComplete: function() {
+					elementToChange.innerText = newInfo;
+					TweenMax.to(
+						elementToChange,
+						0.5, // seconds of animation
+						{opacity: 1.0, color: '#000000'});
+				}
+			});
+		}
 	}
 }
 

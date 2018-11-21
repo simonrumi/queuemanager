@@ -34,8 +34,6 @@ const socketConn = {
         log('a user connected, socket.id is: ' + socket.id);
         var uniqueSocketId = socket.id;
 
-        //createRoomForEachQueue(socket);
-
         socket.on('joinQueue', function(data) {
           log('an attendee wants to join a queue; data given is: ' + data);
           attendeeInQueueControllerUsingSocket.addAttendeeToQueueUsingSocket(data, function(joinQueueResponse) {
@@ -43,6 +41,12 @@ const socketConn = {
             // Render the Pug template for attendeeView, using the data we just got, then send it to the client
             let renderedAttendeeView = attendeeSubViewRenderer(joinQueueResponse);
             io.to(`${uniqueSocketId}`).emit('joinQueueResponse', renderedAttendeeView);
+
+            attendeeInQueueControllerUsingSocket.updateQueueLength(data, function(results) {
+              io.emit('queueLengthUpdated', results);
+            }, function(err) {
+              io.emit('queueLengthUpdated', err);
+            });
           }, function(err) {
             //log('returned to app.js with an error after calling addAttendeeToQueueUsingSocket, joinQueueResponse = ' + JSON.stringify(joinQueueResponse));
             io.to(`${uniqueSocketId}`).emit('joinQueueResponse', JSON.stringify(err));
@@ -65,11 +69,18 @@ const socketConn = {
             attendeeInQueueControllerUsingSocket.updateQueuePlaces(data, function(results) {
               log('\n updateQueuePlaces results:\n' + JSON.stringify(results));
               let roomName = data.queueName;
-              io.to(roomName).emit('queueUpdated', {'roomName': roomName, 'changedQueuePlaces': results.changedQueuePlaces});
+              io.to(roomName).emit('queueUpdated', {'attractionName': roomName, 'changedQueuePlaces': results.changedQueuePlaces});
             }, function(err) {
               log('updateQueuePlaces error: ' + err);
               io.to(`${uniqueSocketId}`).emit('updateQueuePlaces', err);
             });
+
+            attendeeInQueueControllerUsingSocket.updateQueueLength(data, function(results) {
+              io.emit('queueLengthUpdated', results);
+            }, function(err) {
+              io.emit('queueLengthUpdated', err);
+            });
+
           }, function(err) {
             io.to(`${uniqueSocketId}`).emit('leaveQueueResponse', err);
           });

@@ -27,3 +27,22 @@ exports.glueWordsTogether = function (words, roomName) {
 		return roomName;
 	}
 }
+
+//the queueChangeUrl comes from the client when an attendee joins or leaves a queue
+exports.getQueueIdFromQueueChangeUrl = function (queueChangeUrl) {
+	// queueChangeUrl looks something like this
+	// 'http://localhost:3000/venue/queue/:5b955db0b9d438472078dbf9/removeAttendee/:5b95ddf5af21a2333ceb4795'
+	return queueChangeUrl.match(/queue\/:([^\/]*)/)[1];
+}
+
+exports.getAttendeeIdFromQueueChangeUrl = function (queueChangeUrl) {
+	// queueChangeUrl looks something like this
+	// 'http://localhost:3000/venue/queue/:5b955db0b9d438472078dbf9/removeAttendee/:5b95ddf5af21a2333ceb4795'
+	// or this
+	// 'http://localhost:3000/venue/queue/:5b955db0b9d438472078dbf9/addAttendee/:5b95ddf5af21a2333ceb4795'
+	let attendeeIdMatchArr = queueChangeUrl.match(/addAttendee\/:([^\/]*)/);
+	if (!attendeeIdMatchArr) {
+		attendeeIdMatchArr = queueChangeUrl.match(/removeAttendee\/:([^\/]*)/);
+	}
+	return attendeeIdMatchArr[1];
+}
