@@ -37,7 +37,7 @@ const socketConn = {
         socket.on('joinQueue', function(data) {
           log('an attendee wants to join a queue; data given is: ' + data);
           attendeeInQueueControllerUsingSocket.addAttendeeToQueueUsingSocket(data, function(joinQueueResponse) {
-            //log('returned to app.js after calling addAttendeeToQueueUsingSocket, joinQueueResponse = ' + JSON.stringify(joinQueueResponse));
+            //log('after calling addAttendeeToQueueUsingSocket, joinQueueResponse = ' + JSON.stringify(joinQueueResponse));
             // Render the Pug template for attendeeView, using the data we just got, then send it to the client
             let renderedAttendeeView = attendeeSubViewRenderer(joinQueueResponse);
             io.to(`${uniqueSocketId}`).emit('joinQueueResponse', renderedAttendeeView);
@@ -123,7 +123,7 @@ const socketConn = {
 }
 
 // might not want this
-const createRoomForEachQueue = function(socket) {
+/* const createRoomForEachQueue = function(socket) {
   QueueModel.find({}).exec(function(err, allQueues) {
     async.eachOf(allQueues, function(item, index, callback) {
       //strip spaces from the queue name so we can use it as a socket room name
@@ -140,6 +140,6 @@ const createRoomForEachQueue = function(socket) {
       }
     });
   });
-}
+} */
 
 module.exports = socketConn;

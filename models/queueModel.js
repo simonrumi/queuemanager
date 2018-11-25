@@ -11,5 +11,8 @@ QueueSchema.virtual('url').get(function() {
 	return '/venue/queue/:' + this._id;
 });
 
+QueueSchema.set('toObject', { getters: true });
+QueueSchema.set('toJSON', { getters: true });
+
 var Queue = mongoose.model('Queue', QueueSchema);
 module.exports = Queue;

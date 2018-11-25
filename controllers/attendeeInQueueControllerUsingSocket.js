@@ -5,10 +5,11 @@ const HelperFunctions = require('./helperFunctions');
 const getQueuesAttendeeIsNotIn = HelperFunctions.getQueuesAttendeeIsNotIn;
 const getQueueIdFromQueueChangeUrl = HelperFunctions.getQueueIdFromQueueChangeUrl;
 const getAttendeeIdFromQueueChangeUrl = HelperFunctions.getAttendeeIdFromQueueChangeUrl;
+const addQueueLengthsToAttendeeDetailResults = HelperFunctions.addQueueLengthsToAttendeeDetailResults;
 const async = require('async');
 const log = require('../logger');
 
-log('in attendeeController, required models/attendeeInQueue');
+log('started attendeeController');
 
 /**
 * for general reference
@@ -27,7 +28,7 @@ exports.updateQueueLength = function(data, resolve, reject) {
 			log('\nError getting count of attendees in queue with id ' + queueId + ' :\n' + err);
 			reject('\nError getting count of attendees in queue with id ' + queueId + ' :\n' + err);
 		} else {
-			log('\nupdateQueueLength got attractionName: ' + data.queueName + ', changedQueueLength: ' + count)
+			//log('\nupdateQueueLength got attractionName: ' + data.queueName + ', changedQueueLength: ' + count)
 			resolve({'attractionName': data.queueName, 'changedQueueLength': count});
 		}
 	});
@@ -109,7 +110,7 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 
 						// the attendee's place in the queue is going to be the current length of the queue + 1
 						AttendeeInQueueModel.where({'queue': queueId}).countDocuments(function(err, count) {
-							log('\n Count of attendees in queue with the id ' + queueId + ' == ' + count + '\n');
+							//log('\n Count of attendees in queue with the id ' + queueId + ' == ' + count + '\n');
 							if (err) {
 								log('\nError getting count of attendees in queue with id ' + queueId + ' :\n' + err);
 								reject('\nError getting count of attendees in queue with id ' + queueId + ' :\n' + err);
@@ -142,7 +143,7 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 			});
 		},
 
-		// 2nd in series: get all the data to update the attendee detail page
+		// 2nd in series: get (most of) the data to update the attendee detail page
 		function(callback) {
 			async.parallel({
 				queues: function(callback) {
@@ -196,13 +197,27 @@ exports.addAttendeeToQueueUsingSocket = function(data, resolve, reject) {
 		// having run the series of tasks, this is the callback() that returns the results
 		function(err, results) {
 			//log('addAttendeeToQueueUsingSocket.async.series() results = \n' + JSON.stringify(results) + '\n');
+
 			if(err) {
 				reject('Error in addAttendeeToQueueUsingSocket: ' + err);
+				return;
 			} else {
-				let finalResults = results[1]; // results is an array with the first element being some stuff we don't need, but the 2nd element has what we want in it
-				finalResults.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(finalResults.attendeeInQueues, finalResults.queues);
-				log('\naddAttendeeToQueueUsingSocket: finalResults = ' + JSON.stringify(finalResults) +'\n');
-				resolve({data: finalResults});
+				// results is an array with the first element being some stuff we don't need, but the 2nd element has what we want in it
+				let usefulResults = results[1];
+				let queueLengthsPromise =	HelperFunctions.getNumberOfAttendeesInEachQueue(usefulResults.queues);
+				queueLengthsPromise.then((queueLengthsArr) => {
+					//log('\nHelperFunctions.getNumberOfAttendeesInEachQueue returned queueLengthsArr\n' + JSON.stringify(queueLengthsArr));
+
+					let resultsWithQueuesAttendeeIsNotIn = {...usefulResults};
+					resultsWithQueuesAttendeeIsNotIn.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(usefulResults.attendeeInQueues, usefulResults.queues);
+					completeResults = addQueueLengthsToAttendeeDetailResults(resultsWithQueuesAttendeeIsNotIn, queueLengthsArr);
+
+					//log('\n in queueLengthsPromise, completeResults are:\n' + JSON.stringify(completeResults));
+					resolve({data: completeResults});
+				}).catch((err) => {
+					log('\nHelperFunctions.getNumberOfAttendeesInEachQueue returned an error\n' + err);
+					reject(err);
+				});
 			}
 		}
 	);
@@ -244,12 +259,26 @@ exports.removeAttendeeFromQueueUsingSocket = function(data, resolve, reject) {
 	], function(err, results) {
 		//log('removeAttendeeFromQueue.async.series() results = \n' + JSON.stringify(results));
 		if(err) {
+			log('Error in removeAttendeeFromQueue: ' + err);
 			reject('Error in removeAttendeeFromQueue: ' + err);
 			return;
 		} else {
-			let finalResults = results[1]; // results is an array with the first element being some stuff we don't need, but the 2nd element has what we want in it
-			finalResults.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(finalResults.attendeeInQueues, finalResults.queues);
-			resolve({data: finalResults});
+			// results is an array with the first element being some stuff we don't need, but the 2nd element has what we want in it
+			let usefulResults = results[1];
+			let queueLengthsPromise =	HelperFunctions.getNumberOfAttendeesInEachQueue(usefulResults.queues);
+			queueLengthsPromise.then((queueLengthsArr) => {
+				//log('\nHelperFunctions.getNumberOfAttendeesInEachQueue returned queueLengthsArr\n' + JSON.stringify(queueLengthsArr));
+
+				let resultsWithQueuesAttendeeIsNotIn = {...usefulResults};
+				resultsWithQueuesAttendeeIsNotIn.queuesAttendeeIsNotIn = getQueuesAttendeeIsNotIn(usefulResults.attendeeInQueues, usefulResults.queues);
+				completeResults = addQueueLengthsToAttendeeDetailResults(resultsWithQueuesAttendeeIsNotIn, queueLengthsArr);
+
+				//log('\n in queueLengthsPromise, completeResults are:\n' + JSON.stringify(completeResults));
+				resolve({data: completeResults});
+			}).catch((err) => {
+				//log('\nHelperFunctions.getNumberOfAttendeesInEachQueue returned an error\n' + err);
+				reject(err);
+			});
 		}
 	});
 }

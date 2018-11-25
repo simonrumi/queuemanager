@@ -9,6 +9,11 @@ const log = require('../logger');
 log('in attendeeController, required models/attendeemodel, models/queueModel, models/attendeeInQueue');
 
 exports.index = function(req, res) {
+	// this will cause public/javascripts/attendeeClient.js to load
+	// which will emit either clientFoundKnownAttendee or clientFoundUnknownAttendee
+	// which will be heard by socketConnection.js
+	// which renders the attendeeSubView
+	// which contains all the info about queues the attendee is in
 	res.render('attendeeView', {title: ''});
 }
 
@@ -71,7 +76,7 @@ exports.attendeeCreateGet = function(req, res) {
 			res.send('success: uploaded oneTestAttendee');
 		}
 	});
-	
+
 	res.send('not implemented: attendeeCreateGet');
 }
 */

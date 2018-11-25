@@ -6,8 +6,9 @@ const socketConnection = require('../controllers/socketConnection');
 //controllers
 const queueController = require('../controllers/queueController');
 const attendeeController = require('../controllers/attendeeController');
-const attendeeInQueueController = require('../controllers/attendeeInQueueController');
-log('in venueRoutes, required queueController, attendeeController, attendeeInQueueController');
+const attendeeControllerUsingSocket = require('../controllers/attendeeControllerUsingSocket');
+const attendeeInQueueController = require('../controllers/attendeeInQueueControllerUsingSocket');
+//log('in venueRoutes, required queueController, attendeeController, attendeeInQueueController');
 
 router.get('/', attendeeController.index);
 
@@ -39,10 +40,10 @@ router.get('/attendees', attendeeController.attendeeList);
 router.get('/attendee/:id', attendeeController.attendeeDetail);
 
 // add an attendee to a queue
-router.get('/queue/:queueid/addAttendee/:attendeeid', attendeeInQueueController.addAttendeeToQueue);
+router.get('/queue/:queueid/addAttendee/:attendeeid', attendeeInQueueController.addAttendeeToQueueUsingSocket);
 
 // remove an attendee from a queue
-router.get('/queue/:queueid/removeAttendee/:attendeeid', attendeeInQueueController.removeAttendeeFromQueue);
+router.get('/queue/:queueid/removeAttendee/:attendeeid', attendeeInQueueController.removeAttendeeFromQueueUsingSocket);
 
 
 /**** test of socket.io - remove ***/
