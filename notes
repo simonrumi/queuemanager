@@ -1,0 +1,14 @@
+from attendeeController.js :
+
+exports.index = function(req, res) {
+	// this will cause public/javascripts/attendeeClient.js to load
+	// which will emit either clientFoundKnownAttendee or clientFoundUnknownAttendee
+	// which will be heard by socketConnection.js
+	// which renders the attendeeSubView
+	// which contains all the info about queues the attendee is in
+	res.render('attendeeView', {title: ''});
+
+----
+in attendeeInQueueControllerUsingSocket.js look at addAttendeeToQueueUsingSocket 
+
+in there note that the callback used in async is the last function passed to e.g. async.series()
